@@ -1,19 +1,18 @@
 {
   "name": "outpass-management-backend",
   "version": "1.0.0",
-  "description": "Node.js + SQLite3 backend for Outpass Management System",
+  "description": "Node.js + PostgreSQL backend for Outpass Management System",
   "main": "server.cjs",
   "type": "commonjs",
   "scripts": {
     "start": "node server.cjs",
-    "dev": "nodemon server.cjs",
-    "postinstall": "npm rebuild sqlite3"
+    "dev": "nodemon server.cjs"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "sqlite3": "^5.1.6",
+    "body-parser": "^1.20.2",
     "cors": "^2.8.5",
-    "body-parser": "^1.20.2"
+    "express": "^4.18.2",
+    "pg": "^8.11.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.0"
