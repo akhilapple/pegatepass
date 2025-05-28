@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Outpass Management System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<!-- Top area: Notification above search bar -->
+<div class="top-area">
+  <div id="notifBellWrapper">
+    <div id="notifBell" onclick="toggleNotificationPanel()">
+      <i class="fas fa-bell"></i>
+      <span id="notifBadge"></span>
+    </div>
+    <div id="notificationPanel">
+      <div class="notif-header">
+        <span><i class="fas fa-bell"></i>New Outpass Requests</span>
+        <button class="notif-close" onclick="closeNotificationPanel()" title="Dismiss">&times;</button>
+      </div>
+      <ul id="notifList"></ul>
+    </div>
+  </div>
+  <div class="vibrant-search-container">
+    <input type="text" id="searchInput" oninput="handleSearchInput()" />
+    <div id="adminDropdown" class="hidden">
+      <select onchange="openAdminModal(this.value)">
+        <option value="">Select Admin Role</option>
+        <option value="hr">HR/ADMIN</option>
+        <option value="ceo">CEO</option>
+        <option value="saleshead">Sales Head</option>
+        <option value="accountshead">Accounts Head</option>
+        <option value="sectionhead">Section Head</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- Outpass Form: Mobile-Optimized -->
+<div class="form-container" id="outpassForm">
+  <h2>GET YOUR OUT-PASS</h2>
+  <div class="mobile-form-fields">
+    <div class="mobile-field-group">
+      <label class="mobile-label" for="domain">Domain</label>
+      <select id="domain">
+        <option value="">-- Select --</option>
+        <option>PRIYANKA ENTERPRISES</option>
+        <option>CLARION FARMING</option>
+        <option>CLARION INNOVATIONS</option>
+      </select>
+    </div>
+    <div class="mobile-field-group">
+      <label class="mobile-label" for="name">Name</label>
+      <input type="text" id="name">
+    </div>
+    <div class="mobile-field-group">
+      <label class="mobile-label" for="date">Date</label>
+      <input type="date" id="date">
+    </div>
+    <div class="mobile-field-group">
+      <label class="mobile-label" for="outTime">Out Time</label>
+      <div class="mobile-time-row">
+        <input type="time" id="outTime" style="flex:1;">
+        <select id="mobileOutAmPm" class="ampm-mobile">
+          <option>AM</option>
+          <option>PM</option>
+        </select>
+      </div>
+    </div>
+    <div class="mobile-field-group">
+      <label class="mobile-label" for="inTime">In Time Estd.</label>
+      <div class="mobile-time-row">
+        <input type="time" id="inTime" style="flex:1;">
+        <select id="mobileInAmPm" class="ampm-mobile">
+          <option>AM</option>
+          <option>PM</option>
+        </select>
+      </div>
+    </div>
+    <div class="mobile-field-group">
+      <label class="mobile-label" for="reason">Reason</label>
+      <textarea id="reason" rows="2"></textarea>
+    </div>
+    <div class="mobile-field-group">
+      <label class="mobile-label" for="vehicleUsed">Vehicle Used?</label>
+      <select id="vehicleUsed" onchange="toggleVehicleFields(this.value)">
+        <option value="">-- Select --</option>
+        <option>No</option>
+        <option>Yes</option>
+      </select>
+    </div>
+    <div id="vehicleFields" class="hidden">
+      <div class="mobile-field-group">
+        <label class="mobile-label" for="vehicleNo">Vehicle No</label>
+        <input type="text" id="vehicleNo">
+      </div>
+      <div class="mobile-field-group">
+        <label class="mobile-label" for="readingOut">Reading Out</label>
+        <input type="number" id="readingOut">
+      </div>
+      <div class="mobile-field-group">
+        <label class="mobile-label" for="readingIn">Reading In</label>
+        <input type="number" id="readingIn">
+      </div>
+    </div>
+    <div class="mobile-field-group">
+      <label class="mobile-label" for="authority">Request to</label>
+      <select id="authority">
+        <option value="">-- Select --</option>
+        <option value="hr">HR/ADMIN</option>
+        <option value="ceo">C.E.O</option>
+        <option value="saleshead">Sales Head</option>
+        <option value="accountshead">Accounts Head</option>
+        <option value="sectionhead">Section Head</option>
+      </select>
+    </div>
+    <button class="send-button" onclick="submitForm()">SEND</button>
+    <div id="successPopup" class="hidden"></div>
+  </div>
+</div>
+
+<!-- Know Your Status Section -->
+<div class="status-section">
+  <div class="status-title">
+    <i class="fas fa-question-circle"></i>
+    Know your status
+  </div>
+  <div class="status-search-bar">
+    <i class="fas fa-search"></i>
+    <input type="text" id="statusCodeInput" placeholder="Enter your code..." autocomplete="off" />
+  </div>
+  <div id="namePromptContainer" class="hidden" style="margin-top:7px;">
+    <span style="color:#0047AB;font-size:12px;">Multiple users found for this code. Please enter your name:</span>
+    <input type="text" id="statusNameInput" style="margin-top:3px;max-width:110px;padding:4px 7px;border-radius:4px;border:1px solid #bbb;" placeholder="Your name..." autocomplete="off" />
+  </div>
+  <div id="statusResponse" class="hidden"></div>
+</div>
+
+<!-- Admin Modal (overlay, hidden by default, shown only if triggered) -->
+<div id="adminLoginModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeAdminLogin()">&times;</span>
+    <h3>Admin Login</h3>
+    <label>Username:</label><input type="text" id="adminSelect" autocomplete="off"><br><br>
+    <label>Password:</label><input type="password" id="adminPassword" autocomplete="off"><br><br>
+    <button onclick="loginAdmin()">Login</button>
+  </div>
+</div>
+
+<!-- Security Modal (overlay, hidden by default, shown only if triggered) -->
+<div id="securityLoginModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeSecurityLogin()">&times;</span>
+    <h3>Security Login</h3>
+    <label>User ID:</label><input type="text" id="securityUser" autocomplete="off"><br><br>
+    <label>Password:</label><input type="password" id="securityPassword" autocomplete="off"><br><br>
+    <button onclick="loginSecurity()">Login</button>
+  </div>
+</div>
+
+<!-- Admin Panel -->
+<div id="adminPanel" class="hidden">
+  <h2>Submitted Outpass Records</h2>
+  <div class="table-header-actions">
+    <button class="pdf-icon-button" onclick="downloadPDF()" title="Download PDF"><i class="fas fa-arrow-down"></i></button>
+    <button id="deleteTableMainBtn" class="delete-icon-button hidden" onclick="openDeleteModal()" title="Delete Table"><i class="fas fa-trash"></i></button>
+    <button class="send-button logout-red" style="margin-bottom: 0; float: none;" onclick="logout()">Logout</button>
+  </div>
+  <div id="pdfContent">
+    <table id="dataTable">
+      <thead>
+        <tr>
+          <th>Domain</th><th>Name</th><th>Date</th><th>Out Time</th><th>In Time</th><th>Reason</th>
+          <th>Vehicle Used</th><th>Vehicle No</th><th>Reading Out</th><th>Reading In</th><th>Authority</th><th>Approve</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Security Panel -->
+<div id="securityPanel" class="hidden">
+  <h2>Outpass Requests</h2>
+  <div class="table-header-actions">
+    <button class="pdf-icon-button" onclick="downloadPDFSecurity()" title="Download PDF"><i class="fas fa-arrow-down"></i></button>
+    <button class="send-button logout-red" style="margin-bottom: 0; float: none;" onclick="logoutSecurity()">Logout</button>
+  </div>
+  <div id="securityPdfContent">
+    <table id="securityDataTable">
+      <thead>
+        <tr>
+          <th>Domain</th><th>Name</th><th>Date</th><th>Out Time</th><th>In Time</th><th>Reason</th>
+          <th>Vehicle Used</th><th>Vehicle No</th><th>Reading Out</th><th>Reading In</th><th>Authority</th><th>Status</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Delete Modal for HR (overlay, hidden by default, shown only if triggered) -->
+<div id="deleteModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeDeleteModal()">&times;</span>
+    <h3>Confirm Table Deletion</h3>
+    <input type="text" id="deleteCodeInput" maxlength="3" autocomplete="off" />
+    <button id="deleteTableBtn" class="delete-icon-button" disabled title="Delete Table">
+      <i class="fas fa-trash"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Sound for Notification -->
+<audio id="notifSound" src="https://cdn.pixabay.com/audio/2022/07/26/audio_124bfa03fa.mp3" preload="auto"></audio>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
