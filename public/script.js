@@ -70,7 +70,6 @@ async function fetchWithTimeout(resource, options = {}) {
   }
 }
 
-// Save record to API only
 async function saveRecordAPI(formData) {
   const res = await fetchWithTimeout("https://pegatepass-fzzy.onrender.com/api/submit", {
     method: 'POST',
@@ -81,7 +80,6 @@ async function saveRecordAPI(formData) {
   return await res.json();
 }
 
-// Get all records from API only
 async function getRecordsAPI() {
   const res = await fetchWithTimeout(API_BASE);
   if (!res.ok) throw new Error("API failed");
@@ -90,7 +88,6 @@ async function getRecordsAPI() {
   return data;
 }
 
-// Update record in API (by key/id) only (not used for approve/reject)
 async function updateRecordAPI(keycode, updateObj) {
   const res = await fetchWithTimeout(`${API_BASE}/${encodeURIComponent(keycode)}`, {
     method: 'PATCH',
@@ -101,7 +98,6 @@ async function updateRecordAPI(keycode, updateObj) {
   return await res.json();
 }
 
-// Delete all records (HR only), API only
 async function deleteAllRecordsAPI() {
   const res = await fetchWithTimeout(API_BASE, { method: 'DELETE' });
   if (!res.ok) throw new Error("API failed");
@@ -296,7 +292,6 @@ async function renderTable() {
   });
 }
 
-// --- Approve/Reject logic: use /api/approve with id/action ---
 async function approveRecord(keycode) {
   const records = await getRecordsAPI();
   const rec = records.find(r => r.keycode === keycode);
@@ -517,6 +512,7 @@ function openDeleteModal() {
   document.getElementById("deleteModal").classList.add("show");
   document.getElementById("deleteCodeInput").value = "";
   document.getElementById("deleteTableBtn").disabled = true;
+  document.getElementById("deleteTableBtn").innerHTML = '<i class="fas fa-trash"></i>';
   document.getElementById("deleteCodeInput").oninput = function() {
     document.getElementById("deleteTableBtn").disabled = (this.value.trim() !== "333");
   }
@@ -525,9 +521,6 @@ function openDeleteModal() {
 function closeDeleteModal() {
   document.getElementById("deleteModal").classList.remove("show");
 }
-
-// --- IMPROVED DELETE FUNCTION ---
-// Use Blob and FileSaver fallback if needed for reliable PDF download, but html2pdf().save() returns a Promise only when the PDF is generated
 async function deleteAndDownloadTable() {
   const btn = document.getElementById("deleteTableBtn");
   btn.disabled = true;
@@ -544,16 +537,30 @@ async function deleteAndDownloadTable() {
 
   try {
     await html2pdf().set(opt).from(element).save();
-    // Only after successful PDF download:
-    await deleteAllRecordsAPI();
-    renderTable();
-    closeDeleteModal();
-    alert("Table deleted.");
+    setTimeout(async () => {
+      btn.innerHTML = '<i class="fas fa-trash"></i>';
+      if (confirm("PDF downloaded. Do you want to delete all outpass records?")) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        try {
+          await deleteAllRecordsAPI();
+          renderTable();
+          closeDeleteModal();
+          alert("Table deleted.");
+        } catch (e) {
+          alert("Delete failed. Please try again.");
+        }
+      } else {
+        closeDeleteModal();
+      }
+      btn.innerHTML = '<i class="fas fa-trash"></i>';
+      btn.disabled = false;
+    }, 500); // Slight delay to allow download to start
   } catch(e) {
     alert("PDF download failed. Table not deleted.");
+    btn.innerHTML = '<i class="fas fa-trash"></i>';
+    btn.disabled = false;
   }
-  btn.innerHTML = '<i class="fas fa-trash"></i>';
-  btn.disabled = false;
 }
 
 // --------- Initialization ---------
