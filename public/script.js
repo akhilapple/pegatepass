@@ -46,56 +46,90 @@ function generateRandomCode() {
   return `pe${letters}${digits}`;
 }
 
-// Replace localStorage functions with API calls to https://pegatepass-fzzy.onrender.com
+// ------------ API HELPERS (with fallback to localStorage) -----------
 
-// Save record to API
+// API base
+const API_BASE = "https://pegatepass-fzzy.onrender.com/records";
+
+// Check if API is reachable, fallback to localStorage if not
+async function fetchWithTimeout(resource, options = {}) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), 5000); // 5s timeout
+  try {
+    const response = await fetch(resource, {
+      ...options,
+      signal: controller.signal
+    });
+    clearTimeout(id);
+    return response;
+  } catch (e) {
+    clearTimeout(id);
+    throw e;
+  }
+}
+
+// Save record to API, fallback to localStorage if offline or error
 async function saveRecordAPI(formData) {
   try {
-    const res = await fetch('https://pegatepass-fzzy.onrender.com/records', {
+    const res = await fetchWithTimeout(API_BASE, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formData)
     });
+    if (!res.ok) throw new Error("API failed");
     return await res.json();
   } catch (e) {
-    alert('Failed to submit. Try again later.');
-    throw e;
+    // Fallback to localStorage
+    let existing = JSON.parse(localStorage.getItem("records") || "[]");
+    existing.push(formData);
+    localStorage.setItem("records", JSON.stringify(existing));
+    return formData;
   }
 }
 
-// Get all records from API
+// Get all records from API, fallback to localStorage if offline or error
 async function getRecordsAPI() {
   try {
-    const res = await fetch('https://pegatepass-fzzy.onrender.com/records');
-    return await res.json();
+    const res = await fetchWithTimeout(API_BASE);
+    if (!res.ok) throw new Error("API failed");
+    const data = await res.json();
+    if (!Array.isArray(data)) throw new Error("Data not array");
+    return data;
   } catch (e) {
-    alert('Failed to fetch records.');
-    return [];
+    // Fallback to localStorage
+    return JSON.parse(localStorage.getItem("records") || "[]");
   }
 }
 
-// Update record in API (by key)
+// Update record in API (by key), fallback to localStorage
 async function updateRecordAPI(key, updateObj) {
   try {
-    const res = await fetch(`https://pegatepass-fzzy.onrender.com/records/${encodeURIComponent(key)}`, {
+    const res = await fetchWithTimeout(`${API_BASE}/${encodeURIComponent(key)}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updateObj)
     });
+    if (!res.ok) throw new Error("API failed");
     return await res.json();
   } catch (e) {
-    alert('Failed to update record.');
-    throw e;
+    // Fallback to localStorage
+    let existing = JSON.parse(localStorage.getItem("records") || "[]");
+    let idx = existing.findIndex(r => r.key === key);
+    if (idx !== -1) {
+      existing[idx] = { ...existing[idx], ...updateObj };
+      localStorage.setItem("records", JSON.stringify(existing));
+    }
+    return existing[idx];
   }
 }
 
-// Delete all records (HR only)
+// Delete all records (HR only), fallback to localStorage
 async function deleteAllRecordsAPI() {
   try {
-    await fetch('https://pegatepass-fzzy.onrender.com/records', { method: 'DELETE' });
+    await fetchWithTimeout(API_BASE, { method: 'DELETE' });
   } catch (e) {
-    alert('Failed to delete records.');
-    throw e;
+    // fallback to localStorage
+    localStorage.removeItem("records");
   }
 }
 
@@ -137,7 +171,9 @@ async function submitForm() {
     setTimeout(() => {
       downloadTextFile(formData.key, "outpass-key.txt");
     }, 650);
-  } catch (e) {}
+  } catch (e) {
+    alert("Failed to submit. Saved locally.");
+  }
 }
 function clearForm() {
   document.querySelectorAll("#outpassForm input, #outpassForm textarea, #outpassForm select").forEach(el => el.value = "");
