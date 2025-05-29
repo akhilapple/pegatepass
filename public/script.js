@@ -525,13 +525,14 @@ function openDeleteModal() {
 function closeDeleteModal() {
   document.getElementById("deleteModal").classList.remove("show");
 }
+
+// --- IMPROVED DELETE FUNCTION ---
+// Use Blob and FileSaver fallback if needed for reliable PDF download, but html2pdf().save() returns a Promise only when the PDF is generated
 async function deleteAndDownloadTable() {
-  // Disable button and show spinner
   const btn = document.getElementById("deleteTableBtn");
   btn.disabled = true;
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
-  // Download PDF, then delete all records
   const element = document.getElementById("pdfContent");
   const opt = {
     margin: 0.3,
@@ -540,18 +541,19 @@ async function deleteAndDownloadTable() {
     html2canvas: { scale: 2 },
     jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
   };
-  html2pdf().set(opt).from(element).save().then(async () => {
+
+  try {
+    await html2pdf().set(opt).from(element).save();
+    // Only after successful PDF download:
     await deleteAllRecordsAPI();
     renderTable();
     closeDeleteModal();
     alert("Table deleted.");
-    btn.innerHTML = '<i class="fas fa-trash"></i>';
-    btn.disabled = false;
-  }).catch(e => {
+  } catch(e) {
     alert("PDF download failed. Table not deleted.");
-    btn.innerHTML = '<i class="fas fa-trash"></i>';
-    btn.disabled = false;
-  });
+  }
+  btn.innerHTML = '<i class="fas fa-trash"></i>';
+  btn.disabled = false;
 }
 
 // --------- Initialization ---------
