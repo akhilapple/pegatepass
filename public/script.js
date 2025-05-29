@@ -49,9 +49,12 @@ function generateRandomCode() {
   return `pe${letters}${digits}`;
 }
 
-// ------------ API HELPERS (NO localStorage fallback) -----------
-
+// ------------ API HELPERS -----------
 const API_BASE = "https://pegatepass-fzzy.onrender.com/api/requests";
+
+// --- PATCH: Use correct approve/reject API ---
+const API_APPROVE = "https://pegatepass-fzzy.onrender.com/api/approve";
+const API_STATUS = "https://pegatepass-fzzy.onrender.com/api/status";
 
 async function fetchWithTimeout(resource, options = {}) {
   const controller = new AbortController();
@@ -90,6 +93,7 @@ async function getRecordsAPI() {
 }
 
 // Update record in API (by key/id) only
+// NOTE: Not used for approve/reject anymore—see approveRecord/rejectRecord
 async function updateRecordAPI(key, updateObj) {
   const res = await fetchWithTimeout(`${API_BASE}/${encodeURIComponent(key)}`, {
     method: 'PATCH',
@@ -157,6 +161,7 @@ function clearForm() {
 }
 
 // --------- Know Your Status ---------
+// Uses /api/status?key=...&name=...
 async function showStatusResponse(statusArr) {
   const resp = document.getElementById("statusResponse");
   if (!statusArr || statusArr.length === 0) {
@@ -196,9 +201,15 @@ async function checkStatusCodeInput() {
   resp.classList.add("hidden");
   resp.innerHTML = "";
   if (!code) return;
-  const records = await getRecordsAPI();
-  const matches = records.filter(r => r.key && r.key.toLowerCase() === code.toLowerCase());
-  if (matches.length === 0) {
+  // Change: Use backend /api/status endpoint
+  let matches = [];
+  try {
+    const res = await fetchWithTimeout(`${API_STATUS}?key=${encodeURIComponent(code)}`);
+    if (res.ok) {
+      matches = await res.json();
+    }
+  } catch {}
+  if (!matches || matches.length === 0) {
     resp.className = "hidden";
     resp.innerHTML = "";
     return;
@@ -216,14 +227,19 @@ document.getElementById("statusCodeInput").addEventListener("input", function() 
 });
 document.getElementById("statusNameInput").addEventListener("input", async function() {
   const code = document.getElementById("statusCodeInput").value.trim();
-  const name = this.value.trim().toLowerCase();
+  const name = this.value.trim();
   const resp = document.getElementById("statusResponse");
   resp.classList.add("hidden");
   resp.innerHTML = "";
   if (!code || !name) return;
-  const records = await getRecordsAPI();
-  const matches = records.filter(r => r.key && r.key.toLowerCase() === code.toLowerCase() && (r.name || "").trim().toLowerCase() === name);
-  if (matches.length === 0) {
+  let matches = [];
+  try {
+    const res = await fetchWithTimeout(`${API_STATUS}?key=${encodeURIComponent(code)}&name=${encodeURIComponent(name)}`);
+    if (res.ok) {
+      matches = await res.json();
+    }
+  } catch {}
+  if (!matches || matches.length === 0) {
     resp.className = "hidden";
     resp.innerHTML = "";
     return;
@@ -283,16 +299,50 @@ async function renderTable() {
   });
 }
 
+// --- Approve/Reject logic: use /api/approve with id/action ---
 async function approveRecord(key) {
-  await updateRecordAPI(key, { approved: true, rejected: false });
+  // Find the record by key to get the id
+  const records = await getRecordsAPI();
+  const rec = records.find(r => r.key === key);
+  if (!rec) {
+    alert("Record not found");
+    return;
+  }
+  try {
+    const res = await fetchWithTimeout(API_APPROVE, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: rec.id, action: "approve" })
+    });
+    if (!res.ok) throw new Error("Failed to approve");
+  } catch {
+    alert("Failed to approve record");
+  }
   renderTable();
   renderNotificationBellAndPanel();
 }
 async function rejectRecord(key) {
-  await updateRecordAPI(key, { approved: false, rejected: true });
+  // Find the record by key to get the id
+  const records = await getRecordsAPI();
+  const rec = records.find(r => r.key === key);
+  if (!rec) {
+    alert("Record not found");
+    return;
+  }
+  try {
+    const res = await fetchWithTimeout(API_APPROVE, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: rec.id, action: "reject" })
+    });
+    if (!res.ok) throw new Error("Failed to reject");
+  } catch {
+    alert("Failed to reject record");
+  }
   renderTable();
   renderNotificationBellAndPanel();
 }
+
 function handleSearchInput() {
   const input = document.getElementById("searchInput").value.trim().toLowerCase();
   document.getElementById("adminDropdown").classList.toggle("hidden", input !== "admin");
