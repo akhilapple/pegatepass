@@ -6,6 +6,7 @@ function getOutAmPmValue() {
 function getInAmPmValue() {
   return document.getElementById('mobileInAmPm').value;
 }
+
 // --------- State ---------
 const adminCredentials = {
   hr: "admin123",
@@ -17,6 +18,7 @@ const adminCredentials = {
 let loggedInAdmin = null;
 let notificationPanelOpen = false;
 let loggedInSecurity = false;
+
 function formatDateDMY(yyyy_mm_dd) {
   if (!yyyy_mm_dd) return '';
   const parts = yyyy_mm_dd.split("-");
@@ -36,6 +38,7 @@ function showSuccessPopup(msg) {
     setTimeout(() => { popup.classList.add("hidden"); }, 550);
   }, 2100);
 }
+
 // Random code generator
 function generateRandomCode() {
   let letters = '';
@@ -48,7 +51,7 @@ function generateRandomCode() {
 
 // ------------ API HELPERS (NO localStorage fallback) -----------
 
-const API_BASE = "https://pegatepass-fzzy.onrender.com/api/requests"; // Adjust to your backend endpoint
+const API_BASE = "https://pegatepass-fzzy.onrender.com/api/requests";
 
 async function fetchWithTimeout(resource, options = {}) {
   const controller = new AbortController();
@@ -88,7 +91,6 @@ async function getRecordsAPI() {
 
 // Update record in API (by key/id) only
 async function updateRecordAPI(key, updateObj) {
-  // You may need to adjust endpoint/path as per your backend
   const res = await fetchWithTimeout(`${API_BASE}/${encodeURIComponent(key)}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -114,6 +116,7 @@ function downloadTextFile(text, filename) {
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
 
+// --------- Submit Form ---------
 async function submitForm() {
   const formData = {
     domain: document.getElementById("domain").value,
@@ -147,11 +150,13 @@ async function submitForm() {
     alert("Failed to submit to server.");
   }
 }
+
 function clearForm() {
   document.querySelectorAll("#outpassForm input, #outpassForm textarea, #outpassForm select").forEach(el => el.value = "");
   document.getElementById("vehicleFields").classList.add("hidden");
 }
-// Know Your Status
+
+// --------- Know Your Status ---------
 async function showStatusResponse(statusArr) {
   const resp = document.getElementById("statusResponse");
   if (!statusArr || statusArr.length === 0) {
@@ -181,6 +186,7 @@ async function showStatusResponse(statusArr) {
   resp.className = "";
   resp.innerHTML = html;
 }
+
 async function checkStatusCodeInput() {
   const code = document.getElementById("statusCodeInput").value.trim();
   const namePrompt = document.getElementById("namePromptContainer");
@@ -204,6 +210,7 @@ async function checkStatusCodeInput() {
     showStatusResponse(matches);
   }
 }
+
 document.getElementById("statusCodeInput").addEventListener("input", function() {
   checkStatusCodeInput();
 });
@@ -231,6 +238,7 @@ document.getElementById("statusCodeInput").addEventListener("input", function() 
     document.getElementById("statusNameInput").value = "";
   }
 });
+
 // --------- Admin Logic ---------
 async function renderTable() {
   const records = await getRecordsAPI();
@@ -274,6 +282,7 @@ async function renderTable() {
     }
   });
 }
+
 async function approveRecord(key) {
   await updateRecordAPI(key, { approved: true, rejected: false });
   renderTable();
@@ -332,6 +341,7 @@ function downloadPDF() {
   };
   html2pdf().set(opt).from(element).save();
 }
+
 // Security Panel
 function openSecurityModal() {
   document.getElementById("securityUser").value = "";
@@ -397,6 +407,7 @@ function logoutSecurity() {
   document.getElementById("notifBellWrapper").style.display = "flex";
   renderNotificationBellAndPanel();
 }
+
 // Notification Bell & Panel
 let previousNotifCount = 0;
 async function renderNotificationBellAndPanel() {
@@ -454,6 +465,7 @@ function closeNotificationPanel() {
   notificationPanelOpen = false;
   document.getElementById("notificationPanel").style.display = "none";
 }
+
 // Delete Table (HR only)
 function openDeleteModal() {
   document.getElementById("deleteModal").classList.add("show");
@@ -476,6 +488,8 @@ async function deleteAndDownloadTable() {
     alert("Table deleted.");
   }, 600);
 }
+
+// --------- Initialization ---------
 document.getElementById("outpassForm").classList.remove("hidden");
 renderNotificationBellAndPanel();
 document.getElementById("adminLoginModal").classList.remove("show");
