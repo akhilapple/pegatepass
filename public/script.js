@@ -526,13 +526,32 @@ function closeDeleteModal() {
   document.getElementById("deleteModal").classList.remove("show");
 }
 async function deleteAndDownloadTable() {
-  downloadPDF();
-  setTimeout(async () => {
+  // Disable button and show spinner
+  const btn = document.getElementById("deleteTableBtn");
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+  // Download PDF, then delete all records
+  const element = document.getElementById("pdfContent");
+  const opt = {
+    margin: 0.3,
+    filename: 'outpass_records.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
+  };
+  html2pdf().set(opt).from(element).save().then(async () => {
     await deleteAllRecordsAPI();
     renderTable();
     closeDeleteModal();
     alert("Table deleted.");
-  }, 600);
+    btn.innerHTML = '<i class="fas fa-trash"></i>';
+    btn.disabled = false;
+  }).catch(e => {
+    alert("PDF download failed. Table not deleted.");
+    btn.innerHTML = '<i class="fas fa-trash"></i>';
+    btn.disabled = false;
+  });
 }
 
 // --------- Initialization ---------
