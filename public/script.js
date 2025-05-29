@@ -36,7 +36,7 @@ function showSuccessPopup(msg) {
     setTimeout(() => { popup.classList.add("hidden"); }, 550);
   }, 2100);
 }
-// Random code generator (reuse allowed)
+// Random code generator
 function generateRandomCode() {
   let letters = '';
   for (let i = 0; i < 3; i++) {
@@ -46,12 +46,10 @@ function generateRandomCode() {
   return `pe${letters}${digits}`;
 }
 
-// ------------ API HELPERS (with fallback to localStorage) -----------
+// ------------ API HELPERS (NO localStorage fallback) -----------
 
-// API base
-const API_BASE = "https://pegatepass-fzzy.onrender.com/records";
+const API_BASE = "https://pegatepass-fzzy.onrender.com/api/requests"; // Adjust to your backend endpoint
 
-// Check if API is reachable, fallback to localStorage if not
 async function fetchWithTimeout(resource, options = {}) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), 5000); // 5s timeout
@@ -68,69 +66,43 @@ async function fetchWithTimeout(resource, options = {}) {
   }
 }
 
-// Save record to API, fallback to localStorage if offline or error
+// Save record to API only
 async function saveRecordAPI(formData) {
-  try {
-    const res = await fetchWithTimeout(API_BASE, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData)
-    });
-    if (!res.ok) throw new Error("API failed");
-    return await res.json();
-  } catch (e) {
-    // Fallback to localStorage
-    let existing = JSON.parse(localStorage.getItem("records") || "[]");
-    existing.push(formData);
-    localStorage.setItem("records", JSON.stringify(existing));
-    return formData;
-  }
+  const res = await fetchWithTimeout("https://pegatepass-fzzy.onrender.com/api/submit", {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(formData)
+  });
+  if (!res.ok) throw new Error("API failed");
+  return await res.json();
 }
 
-// Get all records from API, fallback to localStorage if offline or error
+// Get all records from API only
 async function getRecordsAPI() {
-  try {
-    const res = await fetchWithTimeout(API_BASE);
-    if (!res.ok) throw new Error("API failed");
-    const data = await res.json();
-    if (!Array.isArray(data)) throw new Error("Data not array");
-    return data;
-  } catch (e) {
-    // Fallback to localStorage
-    return JSON.parse(localStorage.getItem("records") || "[]");
-  }
+  const res = await fetchWithTimeout(API_BASE);
+  if (!res.ok) throw new Error("API failed");
+  const data = await res.json();
+  if (!Array.isArray(data)) throw new Error("Data not array");
+  return data;
 }
 
-// Update record in API (by key), fallback to localStorage
+// Update record in API (by key/id) only
 async function updateRecordAPI(key, updateObj) {
-  try {
-    const res = await fetchWithTimeout(`${API_BASE}/${encodeURIComponent(key)}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updateObj)
-    });
-    if (!res.ok) throw new Error("API failed");
-    return await res.json();
-  } catch (e) {
-    // Fallback to localStorage
-    let existing = JSON.parse(localStorage.getItem("records") || "[]");
-    let idx = existing.findIndex(r => r.key === key);
-    if (idx !== -1) {
-      existing[idx] = { ...existing[idx], ...updateObj };
-      localStorage.setItem("records", JSON.stringify(existing));
-    }
-    return existing[idx];
-  }
+  // You may need to adjust endpoint/path as per your backend
+  const res = await fetchWithTimeout(`${API_BASE}/${encodeURIComponent(key)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updateObj)
+  });
+  if (!res.ok) throw new Error("API failed");
+  return await res.json();
 }
 
-// Delete all records (HR only), fallback to localStorage
+// Delete all records (HR only), API only
 async function deleteAllRecordsAPI() {
-  try {
-    await fetchWithTimeout(API_BASE, { method: 'DELETE' });
-  } catch (e) {
-    // fallback to localStorage
-    localStorage.removeItem("records");
-  }
+  const res = await fetchWithTimeout(API_BASE, { method: 'DELETE' });
+  if (!res.ok) throw new Error("API failed");
+  return await res.json();
 }
 
 function downloadTextFile(text, filename) {
@@ -172,7 +144,7 @@ async function submitForm() {
       downloadTextFile(formData.key, "outpass-key.txt");
     }, 650);
   } catch (e) {
-    alert("Failed to submit. Saved locally.");
+    alert("Failed to submit to server.");
   }
 }
 function clearForm() {
