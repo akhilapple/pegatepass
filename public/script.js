@@ -51,8 +51,6 @@ function generateRandomCode() {
 
 // ------------ API HELPERS -----------
 const API_BASE = "https://pegatepass-fzzy.onrender.com/api/requests";
-
-// --- PATCH: Use correct approve/reject API ---
 const API_APPROVE = "https://pegatepass-fzzy.onrender.com/api/approve";
 const API_STATUS = "https://pegatepass-fzzy.onrender.com/api/status";
 
@@ -92,10 +90,9 @@ async function getRecordsAPI() {
   return data;
 }
 
-// Update record in API (by key/id) only
-// NOTE: Not used for approve/reject anymore—see approveRecord/rejectRecord
-async function updateRecordAPI(key, updateObj) {
-  const res = await fetchWithTimeout(`${API_BASE}/${encodeURIComponent(key)}`, {
+// Update record in API (by key/id) only (not used for approve/reject)
+async function updateRecordAPI(keycode, updateObj) {
+  const res = await fetchWithTimeout(`${API_BASE}/${encodeURIComponent(keycode)}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(updateObj)
@@ -186,7 +183,7 @@ async function showStatusResponse(statusArr) {
       colorClass = "status-pending";
       label = "Pending";
     }
-    html += `<div class="status-response ${colorClass}">${icon} Request by <b>${rec.name}</b> (${rec.key}) is <b>${label}</b>.</div>`;
+    html += `<div class="status-response ${colorClass}">${icon} Request by <b>${rec.name}</b> (${rec.keycode}) is <b>${label}</b>.</div>`;
   });
   resp.className = "";
   resp.innerHTML = html;
@@ -201,7 +198,7 @@ async function checkStatusCodeInput() {
   resp.classList.add("hidden");
   resp.innerHTML = "";
   if (!code) return;
-  // Change: Use backend /api/status endpoint
+  // Use backend /api/status endpoint
   let matches = [];
   try {
     const res = await fetchWithTimeout(`${API_STATUS}?key=${encodeURIComponent(code)}`);
@@ -292,18 +289,17 @@ async function renderTable() {
         <td>${rec.readingIn}</td>
         <td>${rec.authority}</td>
         <td>${rec.approved ? '✅ Approved' :
-          `<button class="approve-button" onclick="approveRecord('${rec.key}')">Approve</button>
-          <button class="reject-button" onclick="rejectRecord('${rec.key}')">Reject</button>`}
+          `<button class="approve-button" onclick="approveRecord('${rec.keycode}')">Approve</button>
+          <button class="reject-button" onclick="rejectRecord('${rec.keycode}')">Reject</button>`}
         </td>`;
     }
   });
 }
 
 // --- Approve/Reject logic: use /api/approve with id/action ---
-async function approveRecord(key) {
-  // Find the record by key to get the id
+async function approveRecord(keycode) {
   const records = await getRecordsAPI();
-  const rec = records.find(r => r.key === key);
+  const rec = records.find(r => r.keycode === keycode);
   if (!rec) {
     alert("Record not found");
     return;
@@ -321,10 +317,10 @@ async function approveRecord(key) {
   renderTable();
   renderNotificationBellAndPanel();
 }
-async function rejectRecord(key) {
-  // Find the record by key to get the id
+
+async function rejectRecord(keycode) {
   const records = await getRecordsAPI();
-  const rec = records.find(r => r.key === key);
+  const rec = records.find(r => r.keycode === keycode);
   if (!rec) {
     alert("Record not found");
     return;
