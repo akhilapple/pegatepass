@@ -128,6 +128,17 @@ app.get('/api/status', async (req, res) => {
   }
 });
 
+// API: Delete all outpass requests (HR only)
+app.delete('/api/requests', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM outpass_requests');
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ Delete error:', err);
+    res.status(500).json({ error: "DB error" });
+  }
+});
+
 // Serve frontend
 app.get('/*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));

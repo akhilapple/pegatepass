@@ -98,6 +98,7 @@ async function updateRecordAPI(keycode, updateObj) {
   return await res.json();
 }
 
+// Delete all records (HR only), API only
 async function deleteAllRecordsAPI() {
   const res = await fetchWithTimeout(API_BASE, { method: 'DELETE' });
   if (!res.ok) throw new Error("API failed");
