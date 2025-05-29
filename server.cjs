@@ -12,15 +12,15 @@ const PORT = process.env.PORT || 3000;
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
-    rejectUnauthorized: false
+    rejectUnauthorized: false // Important for Render or Heroku-like services
   }
 });
 
 pool.connect()
   .then(() => {
-    console.log('Connected to PostgreSQL database');
+    console.log('✅ Connected to PostgreSQL database');
 
-    // Create table if it doesn't exist
+    // Ensure the table exists
     return pool.query(`
       CREATE TABLE IF NOT EXISTS outpass_requests (
         id SERIAL PRIMARY KEY,
@@ -41,13 +41,24 @@ pool.connect()
       );
     `);
   })
-  .then(() => console.log('Ensured table outpass_requests exists'))
-  .catch(err => console.error('PostgreSQL setup error:', err));
+  .then(() => console.log('✅ Table checked or created'))
+  .catch(err => console.error('❌ PostgreSQL setup error:', err));
 
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// ✅ TEST DATABASE ENDPOINT
+app.get('/test-db', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT NOW()');
+    res.json({ time: result.rows[0].now });
+  } catch (err) {
+    console.error('❌ DB Test Error:', err);
+    res.status(500).json({ error: 'Database query failed', details: err.message });
+  }
+});
 
 // API: Submit Outpass
 app.post('/api/submit', async (req, res) => {
@@ -73,7 +84,7 @@ app.post('/api/submit', async (req, res) => {
     ]);
     res.json({ success: true, key: keycode });
   } catch (err) {
-    console.error('Insert error:', err);
+    console.error('❌ Insert error:', err);
     res.status(500).json({ error: "DB error" });
   }
 });
@@ -93,7 +104,7 @@ app.get('/api/requests', async (req, res) => {
     const result = await pool.query(sql, params);
     res.json(result.rows);
   } catch (err) {
-    console.error('Select error:', err);
+    console.error('❌ Select error:', err);
     res.status(500).json({ error: "DB error" });
   }
 });
@@ -112,7 +123,7 @@ app.post('/api/approve', async (req, res) => {
     );
     res.json({ success: true });
   } catch (err) {
-    console.error('Update error:', err);
+    console.error('❌ Update error:', err);
     res.status(500).json({ error: "DB error" });
   }
 });
@@ -134,7 +145,7 @@ app.get('/api/status', async (req, res) => {
     const result = await pool.query(sql, params);
     res.json(result.rows);
   } catch (err) {
-    console.error('Select error:', err);
+    console.error('❌ Status error:', err);
     res.status(500).json({ error: "DB error" });
   }
 });
@@ -174,5 +185,5 @@ app.get('/*', (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
